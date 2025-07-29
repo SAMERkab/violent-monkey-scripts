@@ -24,7 +24,7 @@ class Video {
 
   async findElementAndId() {
     return new Promise((resolve, reject) => {
-      function searchForVideo() {
+      const searchForVideo = () => {
         this.setElementFromDocument();
         if (this.element) {
           this.setIdFromUrl();
@@ -32,7 +32,7 @@ class Video {
         } else {
           setTimeout(searchForVideo, 250);
         }
-      }
+      };
       searchForVideo();
     });
   }

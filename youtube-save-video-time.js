@@ -13,7 +13,6 @@
 class Video {
   id;
   element;
-  currentTime;
   currentTimeInterval;
 
   static async fromThisPage() {
@@ -47,7 +46,6 @@ class Video {
 
   startSavingCurrentTime() {
     this.currentTimeInterval = setInterval(() => {
-      this.currentTime = this.element?.currentTime;
       this.storeCurrentTime();
     }, 5000);
   }
@@ -57,12 +55,13 @@ class Video {
   }
 
   async storeCurrentTime() {
-    if (!Number.isFinite(this.currentTime)) return;
+    let currentTime = this.element?.currentTime;
+    if (!Number.isFinite(currentTime)) return;
 
-    if (this.currentTime >= 5) {
-      await GM.setValue(this.id, Math.floor(this.currentTime));
+    if (currentTime >= 5) {
+      await GM.setValue(this.id, Math.floor(currentTime));
     }
-    if (this.currentTime >= this.element.duration - 5) {
+    if (currentTime >= this.element.duration - 5) {
       await GM.deleteValue(this.id);
     }
   }
@@ -79,18 +78,22 @@ class Video {
   }
 }
 
-function pageHasVideo() {
-  return window.location.href.includes("watch");
-}
-
 let video = new Video();
 console.log("script loaded: Persist video playback time");
 
-window.addEventListener("load", async (event) => {
+const pageHasVideo = () => {
+  return window.location.href.includes("watch");
+};
+
+const startVideoPlaybackTimePersistence = async () => {
+  await video.findElementAndId();
+  await video.seekStoredTime();
+  video.startSavingCurrentTime();
+};
+
+window.addEventListener("load", (event) => {
   if (pageHasVideo()) {
-    await video.findElementAndId();
-    await video.seekStoredTime();
-    video.startSavingCurrentTime();
+    startVideoPlaybackTimePersistence();
   }
 });
 
@@ -99,11 +102,9 @@ window.addEventListener("beforeunload", async (event) => {
   video?.stopSavingCurrentTime();
 });
 
-window.addEventListener("popstate", async (event) => {
+window.addEventListener("popstate", (event) => {
   if (pageHasVideo()) {
-    await video.findElementAndId();
-    await video.seekStoredTime();
-    video.startSavingCurrentTime();
+    startVideoPlaybackTimePersistence();
   } else {
     video?.stopSavingCurrentTime();
   }
